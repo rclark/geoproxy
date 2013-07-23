@@ -1,8 +1,8 @@
 module.exports = {
     readTypes: [
         "WFS",
-        //"GeoJSON",
-        //"EsriJSON",
+        "GeoJSON",
+        "EsriJSON",
         "OSM"
     ],
     
