@@ -44,23 +44,24 @@ app.post("/", enableCors, function (req, res, next) {
         next(err);
         return;
     }
-    converter = new Pipeline(req.body.inFormat, req.body.outFormat, function (err) {
-        if (err) {
-            if (err.process_code) { err.http_status = 500; }
-            else { err.http_status = 400; }
-            next(err);
-        /*} else {
-            if (!res.headerSent) { res.header("Content-type", formats.writeFormats[req.body.outFormat]); }
-            converter.output.pipe(res);*/
-        }
-    });
     
     if (_.contains(dataKeys, "post")) {
         res.send("Not implemented yet", 501);
+        return;
     }
     
-    res.header("Content-type", formats.writeFormats[req.body.outFormat]);
-    converter.output.pipe(res);
+    converter = new Pipeline(req.body.inFormat, req.body.outFormat);
+    converter.on("error", function (err) {
+        if (err.process_code) { err.http_status = 500; }
+        else { err.http_status = 400; }
+        next(err);
+    });
+    
+    converter.on("outputReady", function () {
+        res.header("Content-type", formats.writeFormats[req.body.outFormat]);
+        converter.output.pipe(res);
+    });
+    
     request(req.body.url).pipe(converter.input);
 });
 
