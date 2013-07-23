@@ -57,7 +57,8 @@ function Pipeline(inFormat, outFormat) {
     this.output = output;
     
     input.on("pipe", function () {
-        input.pipe(pipeline[0].input);
+        var final = pipeline.length > 0 ? pipeline[0].input : output;
+        self.input.pipe(final);
         self.emit("outputReady");
     });
 };
