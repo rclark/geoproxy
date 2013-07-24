@@ -2,7 +2,7 @@
 ... all the hip GIS encodings
 
 ## What does it do?
-You have a data service but you don't like its output formats. You want something different. Or maybe your data service doesn't understand the internet, I mean, [CORS](http://enable-cors.org). __Geoproxy__ can give you what you need.
+You have a data service but you don't like its output formats. You want something different. Or maybe your data service doesn't understand the modern web, err, [CORS](http://enable-cors.org) at least. __Geoproxy__ can give you what you need.
 
 ## How do I use it?
 - __The Easy Way__: You can go [try the form]().
