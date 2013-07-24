@@ -5,8 +5,6 @@ var spawn = require("child_process").spawn,
     Writable = require("stream").Writable,
     Readable = require("stream").Readable,
     PassThrough = require("stream").PassThrough,
-    zipstream = require("zipstream"),
-    Zip = require("adm-zip"),
     events = require("events"),
     temp = require("temp"),
     fs = require("fs"),
@@ -23,7 +21,7 @@ function File2Stream(outFormat, inFormat) {
     
     if (inFormat === "EsriJSON") { params.push("OGRGeoJSON"); }
     
-    this.input.on("close", function () {        
+    this.input.on("close", function () {
         var ogr = spawn("ogr2ogr", params);
         ogr.stderr.pipe(process.stderr);
         self.output = ogr.stdout;
@@ -33,7 +31,6 @@ function File2Stream(outFormat, inFormat) {
         });
     });
 }
-File2Stream.prototype.__proto__ = events.EventEmitter.prototype;
 
 function File2File(outFormat, inFormat) {
     var inFilePath = temp.path(),
@@ -56,23 +53,20 @@ function File2File(outFormat, inFormat) {
                     outFilePath = path.join(dirPath, outFileName),
                     
                     zip = exec("cd " + dirPath + " && zip " + outFileName + " *", function (err, stdout) {
-                        console.log(outFilePath);                        
                         self.emit("outputReady", outFilePath);
                     });
             });
         });
     });
 }
-File2File.prototype.__proto__ = events.EventEmitter.prototype;
 
 function Stream2Stream(outFormat) {
     var self = this,
-        params = ["-overwrite", "-f", outFormat, "-preserve_fid", "/vsistdout/", "/vsistdin/"];
+        params = ["-overwrite", "-f", outFormat, "-preserve_fid", "/vsistdout/", "/vsistdin/"],
+        ogr = spawn("ogr2ogr", params);
     events.EventEmitter.call(this);
     
     this.conversion = "stream2stream";
-    
-    var ogr = spawn("ogr2ogr", params);
     this.input = ogr.stdin;
     
     this.input.on("pipe", function () {
@@ -80,7 +74,6 @@ function Stream2Stream(outFormat) {
         self.emit("outputReady");
     });
 }
-Stream2Stream.prototype.__proto__ = events.EventEmitter.prototype;
 
 function Stream2File(outFormat) {
     var self = this,
@@ -102,16 +95,15 @@ function Stream2File(outFormat) {
             outFilePath = path.join(dirPath, outFileName),
             
             zip = exec("cd " + dirPath + " && zip " + outFileName + " *", function (err, stdout) {
-                console.log(outFilePath);                        
+                console.log(outFilePath);
                 self.emit("outputReady", outFilePath);
             });
     });
 }
-Stream2File.prototype.__proto__ = events.EventEmitter.prototype;
 
 function ogr2ogr(inFormat, outFormat) {
-    var fileInput = inFormat === "EsriJSON" || inFormat === "GeoJSON" ? true : false;
-    var fileOutput = outFormat === "ESRI Shapefile" || outFormat === "FileGDB" ? true : false;
+    var fileInput = inFormat === "EsriJSON" || inFormat === "GeoJSON" ? true : false,
+        fileOutput = outFormat === "ESRI Shapefile" || outFormat === "FileGDB" ? true : false;
     
     if (fileInput) {
         if (fileOutput) { return new File2File(outFormat, inFormat); }
@@ -119,7 +111,7 @@ function ogr2ogr(inFormat, outFormat) {
     } else {
         if (fileOutput) { return new Stream2File(outFormat); }
         else { return new Stream2Stream(outFormat); }
-    }       
+    }
 }
 
 function geojson2topojson() {
@@ -160,9 +152,9 @@ function geojson2topojson() {
                 output.push(topo.substring(0, size));
                 topo = topo.substring(size);
             }
-        }
+        };
         
-        self.emit("outputReady");        
+        self.emit("outputReady");
     });
 }
 geojson2topojson.prototype.__proto__ = events.EventEmitter.prototype;
@@ -238,6 +230,11 @@ function osm2geojson() {
         throw err;
     });
 }
+
+File2Stream.prototype.__proto__ = events.EventEmitter.prototype;
+File2File.prototype.__proto__ = events.EventEmitter.prototype;
+Stream2Stream.prototype.__proto__ = events.EventEmitter.prototype;
+Stream2File.prototype.__proto__ = events.EventEmitter.prototype;
 osm2geojson.prototype.__proto__ = events.EventEmitter.prototype;
 
 module.exports = {

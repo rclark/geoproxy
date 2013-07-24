@@ -10,7 +10,7 @@ module.exports = {
         GeoJSON: "application/json",
         TopoJSON: "application/json",
         KML: "application/vnd.google-earth.kml+xml",
-        "ESRI Shapefile": "application/octet-stream",
+        "ESRI Shapefile": "application/octet-stream"
         //FileGDB: "application/octet-stream"
     }
 };

@@ -8,7 +8,7 @@ var Pipeline = require("./pipeline"),
 app.use(express.bodyParser());
 app.use(app.router);
 app.use(function (err, req, res, next) {
-    console.error(err.stack);
+    process.stderr.write(err.stack);
     res.send(err.http_status || 500, err.message);
 });
 
@@ -59,8 +59,11 @@ app.post("/", enableCors, function (req, res, next) {
     
     converter = new Pipeline(req.body.inFormat, req.body.outFormat);
     converter.on("error", function (err) {
-        if (err.process_code) { err.http_status = 500; }
-        else { err.http_status = 400; }
+        if (err.process_code) {
+            err.http_status = 500;
+        } else {
+            err.http_status = 400;
+        }
         next(err);
     });
     

@@ -1,9 +1,5 @@
 var stream = require("stream"),
-    formats = require("./formats"),
-    temp = require("temp"),
-    fs = require("fs"),
     events = require("events"),
-    _ = require("underscore"),    
     conversions = require("./conversions");
 
 function Pipeline(inFormat, outFormat) {
@@ -28,11 +24,14 @@ function Pipeline(inFormat, outFormat) {
     
     pipeline.forEach(function (step, index, array) {
         
-        var next = index === array.length - 1 ? output : array[index + 1].input
+        var next = index === array.length - 1 ? output : array[index + 1].input;
             
-        step.on("outputReady", function(filePath) {
-            if (filePath) { self.emit("downloadReady", filePath); }
-            else { step.output.pipe(next); }
+        step.on("outputReady", function (filePath) {
+            if (filePath) {
+                self.emit("downloadReady", filePath);
+            } else {
+                step.output.pipe(next);
+            }
         });
     });
     
@@ -49,7 +48,7 @@ function Pipeline(inFormat, outFormat) {
             self.emit("outputReady");
         }
     });
-};
+}
 
 Pipeline.prototype.__proto__ = events.EventEmitter.prototype;
 
