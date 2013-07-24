@@ -45,6 +45,13 @@ app.post("/", enableCors, function (req, res, next) {
         return;
     }
     
+    if (!_.contains(formats.readTypes, req.body.inFormat) || !_.contains(formats.writeFormats, req.body.outFormat)) {
+        err = new Error("You must choose an allowed input and output format.\nInputs: " + formats.readTypes.join(", ") + "\nOutputs: " + _.keys(formats.writeFormats).join(", "));
+        err.http_status = 400;
+        next(err);
+        return;
+    }
+    
     if (_.contains(dataKeys, "post")) {
         res.send("Not implemented yet", 501);
         return;
@@ -60,6 +67,10 @@ app.post("/", enableCors, function (req, res, next) {
     converter.on("outputReady", function () {
         res.header("Content-type", formats.writeFormats[req.body.outFormat]);
         converter.output.pipe(res);
+    });
+    
+    converter.on("downloadReady", function (filePath) {
+        res.download(filePath);
     });
     
     request(req.body.url).pipe(converter.input);

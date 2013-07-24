@@ -1,85 +1,126 @@
 var spawn = require("child_process").spawn,
+    exec = require("child_process").exec,
     expat = require("node-expat"),
     topojson = require("topojson"),
     Writable = require("stream").Writable,
     Readable = require("stream").Readable,
     PassThrough = require("stream").PassThrough,
+    zipstream = require("zipstream"),
+    Zip = require("adm-zip"),
     events = require("events"),
     temp = require("temp"),
-    fs = require("fs");
+    fs = require("fs"),
+    path = require("path");
 
-function ogr2ogr(inFormat, outFormat) {
+function File2Stream(outFormat, inFormat) {
     var inFilePath = temp.path(),
-        inFileStream = fs.createWriteStream(inFilePath),
-        outFilePath = temp.path(),
-        jsonInput = inFormat === "GeoJSON" || inFormat === "EsriJSON",
-        fileOutput = outFormat === "ESRI Shapefile" || outFormat === "FileGDB",
-        
-        params = ["-f", outFormat, "-preserve_fid"],
-        
-        outParam = fileOutput ? outFilePath : "/vsistdout/",
-        inParam = jsonInput ? inFilePath : "/vsistdin/",
-
-        self = this;    
-    
-    this.conversion = "ogr2ogr";
+        self = this,
+        params = ["-overwrite", "-f", outFormat, "-preserve_fid", "/vsistdout/", inFilePath, "OGRGeoJSON"];
     events.EventEmitter.call(this);
     
-    function outputReady() {
-        self.output = fileOutput ? fs.createReadStream(outFilePath) : proc.stdout;
-        self.emit("outputReady");
-    }
+    this.input = fs.createWriteStream(inFilePath);
+    this.conversion = "file2stream";
     
-    function ogr(params, callback) {
-        var errorMessage = "";
-        callback = callback || function () {};
-        
-        child = spawn("ogr2ogr", params);
-        child.stderr.on("data", function (chunk) { errorMessage += chunk; });
-        child.on("close", function (code) {
-            if (code !== 0) {
-                var err = new Error(errorMessage);
-                err.process_code = code;
-                throw err;
-            } else {
-                callback();
-            }
-        });
-        
-        return child;
-    }
-    
-    params = params.concat([outParam, inParam]);
     if (inFormat === "EsriJSON") { params.push("OGRGeoJSON"); }
     
-    if (jsonInput) {
-        this.input = inFileStream;
-    } else {
-        if (fileOutput) {
-            proc = ogr(params, outputReady);
-        } else {
-            proc = ogr(params);
-        }
-        this.input = proc.stdin;
-    }
-    
-    this.input.on("pipe", function() {
-        if (jsonInput) {
-            self.input.on("finish", function () {
-                if (fileOutput) {
-                    proc = ogr(params, outputReady);
-                }
-                else { 
-                    proc = ogr(params);
-                    outputReady();
-                }
-            });
-        } else if (!fileOutput) {
-            outputReady();
-        }
+    this.input.on("close", function () {        
+        var ogr = spawn("ogr2ogr", params);
+        ogr.stderr.pipe(process.stderr);
+        self.output = ogr.stdout;
+        self.emit("outputReady");
+        ogr.on("close", function (code) {
+            temp.cleanup();
+        });
     });
 }
-ogr2ogr.prototype.__proto__ = events.EventEmitter.prototype;
+File2Stream.prototype.__proto__ = events.EventEmitter.prototype;
+
+function File2File(outFormat, inFormat) {
+    var inFilePath = temp.path(),
+        self = this,
+        params = ["-overwrite", "-f", outFormat, "-preserve_fid"];
+    events.EventEmitter.call(this);
+        
+    this.input = fs.createWriteStream(inFilePath);
+    this.conversion = "file2file";
+    
+    this.input.on("close", function () {
+        temp.mkdir("geoproxy", function (err, dirPath) {
+            dirPath = outFormat === "FileGDB" ? path.join(dirPath, "geoproxy.gdb") : dirPath;
+            params = params.concat([dirPath, inFilePath]);
+            if (inFormat === "EsriJSON") { params.push("OGRGeoJSON"); }
+            
+            var ogr = spawn("ogr2ogr", params);
+            ogr.on("close", function (code) {
+                var outFileName = "geoproxy-result.zip",
+                    outFilePath = path.join(dirPath, outFileName),
+                    
+                    zip = exec("cd " + dirPath + " && zip " + outFileName + " *", function (err, stdout) {
+                        console.log(outFilePath);                        
+                        self.emit("outputReady", outFilePath);
+                    });
+            });
+        });
+    });
+}
+File2File.prototype.__proto__ = events.EventEmitter.prototype;
+
+function Stream2Stream(outFormat) {
+    var self = this,
+        params = ["-overwrite", "-f", outFormat, "-preserve_fid", "/vsistdout/", "/vsistdin/"];
+    events.EventEmitter.call(this);
+    
+    this.conversion = "stream2stream";
+    
+    var ogr = spawn("ogr2ogr", params);
+    this.input = ogr.stdin;
+    
+    this.input.on("pipe", function () {
+        self.output = ogr.stdout;
+        self.emit("outputReady");
+    });
+}
+Stream2Stream.prototype.__proto__ = events.EventEmitter.prototype;
+
+function Stream2File(outFormat) {
+    var self = this,
+        params = ["-overwrite", "-f", outFormat, "-preserve_fid"],
+        dirPath = temp.mkdirSync();
+    dirPath = outFormat === "FileGDB" ? path.join(dirPath, "geoproxy.gdb") : dirPath;
+    events.EventEmitter.call(this);
+    
+    this.conversion = "stream2file";
+    
+    params = params.concat([dirPath, "/vsistdin/"]);
+    
+    var ogr = spawn("ogr2ogr", params);
+    self.input = ogr.stdin;
+    ogr.stderr.pipe(process.stderr);
+                            
+    ogr.on("close", function (code) {
+        var outFileName = "geoproxy-result.zip",
+            outFilePath = path.join(dirPath, outFileName),
+            
+            zip = exec("cd " + dirPath + " && zip " + outFileName + " *", function (err, stdout) {
+                console.log(outFilePath);                        
+                self.emit("outputReady", outFilePath);
+            });
+    });
+}
+Stream2File.prototype.__proto__ = events.EventEmitter.prototype;
+
+function ogr2ogr(inFormat, outFormat) {
+    var fileInput = inFormat === "EsriJSON" || inFormat === "GeoJSON" ? true : false;
+    var fileOutput = outFormat === "ESRI Shapefile" || outFormat === "FileGDB" ? true : false;
+    
+    if (fileInput) {
+        if (fileOutput) { return new File2File(outFormat, inFormat); }
+        else { return new File2Stream(outFormat, inFormat); }
+    } else {
+        if (fileOutput) { return new Stream2File(outFormat); }
+        else { return new Stream2Stream(outFormat); }
+    }       
+}
 
 function geojson2topojson() {
     var input = new Writable(),
@@ -124,7 +165,6 @@ function geojson2topojson() {
         self.emit("outputReady");        
     });
 }
-
 geojson2topojson.prototype.__proto__ = events.EventEmitter.prototype;
 
 function osm2geojson() {
@@ -198,7 +238,6 @@ function osm2geojson() {
         throw err;
     });
 }
-
 osm2geojson.prototype.__proto__ = events.EventEmitter.prototype;
 
 module.exports = {

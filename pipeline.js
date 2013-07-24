@@ -6,23 +6,6 @@ var stream = require("stream"),
     _ = require("underscore"),    
     conversions = require("./conversions");
 
-/*
-    readTypes: [
-        "WFS",
-        //"GeoJSON",
-        //"EsriJSON",
-        "OSM"
-    ],
-    
-    writeFormats: {
-        GeoJSON: "application/json",
-        TopoJSON: "application/json",
-        KML: "application/vnd.google-earth.kml+xml",
-        //"ESRI Shapefile": "application/octet-stream",
-        //FileGDB: "application/octet-stream"
-    }
-*/
-
 function Pipeline(inFormat, outFormat) {
     var pipeline = [],
         input = new stream.PassThrough(),
@@ -36,19 +19,20 @@ function Pipeline(inFormat, outFormat) {
     
     if (outFormat === "TopoJSON") {
         if (inFormat !== "GeoJSON") {
-            pipeline.push(new conversions.ogr2ogr(inFormat, "GeoJSON"));
+            pipeline.push(conversions.ogr2ogr(inFormat, "GeoJSON"));
         }
         pipeline.push(new conversions.geojson2topojson());
     } else if (inFormat !== outFormat) {
-        pipeline.push(new conversions.ogr2ogr(inFormat, outFormat));
+        pipeline.push(conversions.ogr2ogr(inFormat, outFormat));
     }
     
     pipeline.forEach(function (step, index, array) {
         
         var next = index === array.length - 1 ? output : array[index + 1].input
             
-        step.on("outputReady", function() {
-            step.output.pipe(next);
+        step.on("outputReady", function(filePath) {
+            if (filePath) { self.emit("downloadReady", filePath); }
+            else { step.output.pipe(next); }
         });
     });
     
@@ -57,9 +41,13 @@ function Pipeline(inFormat, outFormat) {
     this.output = output;
     
     input.on("pipe", function () {
-        var final = pipeline.length > 0 ? pipeline[0].input : output;
+        var final = pipeline.length > 0 ? pipeline[0].input : output,
+            lastPipeType = pipeline[pipeline.length - 1].conversion;
         self.input.pipe(final);
-        self.emit("outputReady");
+        
+        if (lastPipeType !== "file2file" && lastPipeType !== "stream2file") {
+            self.emit("outputReady");
+        }
     });
 };
 
