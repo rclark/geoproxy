@@ -22,7 +22,7 @@ I'm working on bringing in other valid OGR vector formats (and some others), but
 
 You can transform any of these: | Into any of these:
 --- | ---
-WFS (_GetFeature_ response) | GeoJSON
+WFS (GetFeature response) | GeoJSON
 GeoJSON | TopoJSON
 OpenStreetMap XML | KML
 EsriJSON | ESRI Shapefile
