@@ -11,10 +11,10 @@ You have a data service but you don't like its output formats. You want somethin
     - Make sure your request sets the `Content-type: application/json` header.
     - Your POST body should look like:
     
-        {
-            "url": "http://path/to/your/data...",
-            "inFormat": "WFS",
-            "outFormat": "TopoJSON"
-        }
+            {
+                "url": "http://path/to/your/data...",
+                "inFormat": "WFS",
+                "outFormat": "TopoJSON"
+            }
     
     
