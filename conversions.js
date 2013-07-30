@@ -13,7 +13,7 @@ var spawn = require("child_process").spawn,
 function File2Stream(outFormat, inFormat) {
     var inFilePath = temp.path(),
         self = this,
-        params = ["-overwrite", "-f", outFormat, "-preserve_fid", "/vsistdout/", inFilePath, "OGRGeoJSON"];
+        params = ["-overwrite", "-f", outFormat, "-preserve_fid", "-skipfailures", "/vsistdout/", inFilePath, "OGRGeoJSON"];
     events.EventEmitter.call(this);
     
     this.input = fs.createWriteStream(inFilePath);
@@ -35,7 +35,7 @@ function File2Stream(outFormat, inFormat) {
 function File2File(outFormat, inFormat) {
     var inFilePath = temp.path(),
         self = this,
-        params = ["-overwrite", "-f", outFormat, "-preserve_fid"];
+        params = ["-overwrite", "-f", outFormat, "-preserve_fid", "-skipfailures"];
     events.EventEmitter.call(this);
         
     this.input = fs.createWriteStream(inFilePath);
@@ -62,7 +62,7 @@ function File2File(outFormat, inFormat) {
 
 function Stream2Stream(outFormat) {
     var self = this,
-        params = ["-overwrite", "-f", outFormat, "-preserve_fid", "/vsistdout/", "/vsistdin/"],
+        params = ["-overwrite", "-f", outFormat, "-preserve_fid", "-skipfailures", "/vsistdout/", "/vsistdin/"],
         ogr = spawn("ogr2ogr", params);
     events.EventEmitter.call(this);
     
@@ -77,7 +77,7 @@ function Stream2Stream(outFormat) {
 
 function Stream2File(outFormat) {
     var self = this,
-        params = ["-overwrite", "-f", outFormat, "-preserve_fid"],
+        params = ["-overwrite", "-f", outFormat, "-preserve_fid", "-skipfailures"],
         dirPath = temp.mkdirSync();
     dirPath = outFormat === "FileGDB" ? path.join(dirPath, "geoproxy.gdb") : dirPath;
     events.EventEmitter.call(this);
