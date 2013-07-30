@@ -1,0 +1,81 @@
+!!!html
+html
+    head
+        meta(charset="utf-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1")
+        title Geoproxy
+        
+        link(rel="stylesheet", href="/static/bootstrap/css/bootstrap.css")
+        link(rel="stylesheet", href="/static/geoproxy.css")
+    body
+        .row
+            .col-1.col-sm-1.col-lg-2
+            form(action="/", method="post").form-inline.form-horizontal.col-10.col-sm-10.col-lg-8
+                legend.page-header
+                    h1 Geoproxy 
+                        small All the hip geospatial formats
+                .row.form-group
+                    .col-lg-12
+                        input#url(name="url", type="url", placeholder="Service or Dataset URL Goes Here").form-control
+                .row.form-group
+                    label.col-lg-3.col-sm-3.col-4.control-label Input Format:
+                    .btn-group#inputs(data-toggle="buttons").col-lg-9.col-sm-9
+                        each input in inputs
+                            .btn.btn-success
+                                input(type="radio", name="inFormat", id="input-" + input, value= input)
+                                = input
+    
+                .row.form-group
+                    label.col-lg-3.col-sm-3.col-4.control-label Output Format: 
+                    .btn-group#outputs(data-toggle="buttons").col-lg-9.col-sm-9
+                        each output in outputs
+                            .btn.btn-info
+                                input(type="radio", name="outFormat", id="output-" + output, value= output)
+                                = output
+                
+                .row.form-group
+                    .col-lg-2.col-sm-2.col-2
+                    .col-lg-8.col-sm-8.col-8
+                        input(type="submit").btn.btn-primary.btn-block.btn-large Submit
+                    .col-lg-2.col-sm-2.col-2
+        
+        hr        
+
+        .row
+            .col-1.col-sm-1.col-lg-2
+            .col-10.col-sm-10.col-lg-8
+                h2.pull-right ...does what?
+        .row
+            .col-1.col-sm-1.col-lg-2
+            .col-10.col-sm-10.col-lg-8
+                p.lead It helps convert online geospatial data from one format to another.
+        .row
+            .col-1.col-sm-1.col-lg-2
+            .col-10.col-sm-10.col-lg-8
+                h2.pull-right ...can be used as a service?
+        .row
+            .col-1.col-sm-1.col-lg-2
+            .col-10.col-sm-10.col-lg-8
+                p.lead Yes. <strong>POST</strong> something like this to 
+                    code= baseUrl
+
+                pre
+                    | {
+                    |   "url": "http://server.com/some/data",
+                    |   "inFormat": "EsriJSON",
+                    |   "outFormat": "TopoJSON"
+                    | }                
+                p Make sure to set the header: 
+                    code Content-type: application/json
+                    
+        hr
+        
+        footer
+            ul
+                li: a(href="https://github.com/rclark/geoproxy") On GitHub
+                li ·
+                li: a(href="https://twitter.com/worbly") On Twitter
+            
+                
+        script(src="http://code.jquery.com/jquery-1.10.1.min.js")
+        script(src="/static/bootstrap/js/bootstrap.min.js")

@@ -1,0 +1,21 @@
+.row {
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+footer {
+    text-align: center;
+}
+
+footer ul {
+    list-style-type: none;
+}
+
+footer ul li {
+    display: inline;
+    margin-left: 10px;
+}
+
+.btn-group .btn {
+    min-width: 80px;
+}

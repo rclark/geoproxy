@@ -5,6 +5,11 @@ var Pipeline = require("./pipeline"),
     express = require("express"),
     app = express();
 
+app.set("views", __dirname + "/templates");
+app.set("view engine", "jade");
+
+app.use("/static", express.static(__dirname + "/static"));
+
 app.use(express.bodyParser());
 app.use(app.router);
 app.use(function (err, req, res, next) {
@@ -25,7 +30,11 @@ function enableCors(req, res, next) {
 }
 
 app.get("/", function (req, res) {
-    res.send("this will be a homepage");
+    res.render("index", {
+        inputs: formats.readTypes, 
+        outputs: _.keys(formats.writeFormats), 
+        baseUrl: req.protocol + "://" + req.get("host") + "/"
+    });
 });
 
 app.post("/", enableCors, function (req, res, next) {
@@ -45,7 +54,7 @@ app.post("/", enableCors, function (req, res, next) {
         return;
     }
     
-    if (!_.contains(formats.readTypes, req.body.inFormat) || !_.contains(formats.writeFormats, req.body.outFormat)) {
+    if (!_.contains(formats.readTypes, req.body.inFormat) || !_.contains(_.keys(formats.writeFormats), req.body.outFormat)) {
         err = new Error("You must choose an allowed input and output format.\nInputs: " + formats.readTypes.join(", ") + "\nOutputs: " + _.keys(formats.writeFormats).join(", "));
         err.http_status = 400;
         next(err);
